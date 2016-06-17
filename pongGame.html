@@ -16,7 +16,7 @@
         background-color: white;
       }
       #myCanvas {
-        background-color: rgba(0,0,0,0.7);
+        background-color: rgba(0,0,0,1);
         border: 4px solid #00ffff;
       }
     </style>
@@ -24,50 +24,52 @@
   <body>
     <center>
       <h3>
-        Player1 : <span id="player1">0</span>&emsp;&emsp;&emsp;&emsp;&emsp;
+        Computer : <span id="player1">0</span>&emsp;&emsp;&emsp;&emsp;&emsp;
         <button type="button" id="play">Play Game</button>&emsp;&emsp;&emsp;&emsp;&emsp;
-        Player2 : <span id="player2">0</span>
+        You : <span id="player2">0</span>
       </h3>
       <br/>
       <canvas id="myCanvas" width="800" height="400"></canvas>
     </center>
     <script type="text/javascript">
 
+      //function to reset values when user wants to play again
       function resetInitialValues() {
-        gameStarted = 0;
+        gameStarted = 0;hit=true;
         ballX=400;ballY=200;bat1Y=165;bat2Y=165;points1=0;points2=0;ballSpeedY=-5;ballSpeedX=-5;
         play.textContent = "Play Again";
         play.style.visibility = "visible";
         ctx.clearRect(0,0,800,400);
       }
 
+      //function to draw the ball
       function drawBall() {
-        ctx.clearRect(ballX-10,ballY-12,20,22);
-        if(ballX==770) {
-          if(ballY<bat2Y-10 || ballY>bat2Y+80) {    //collision detection with right bat
+        ctx.clearRect(ballX-10,ballY-12,20,24);
+        if(ballX==770 && !hit) {
+          //ballSpeedX=-ballSpeedX;
+          hit=!hit;
+          if(ballY<bat2Y-15 || ballY>bat2Y+85) {    //collision detection with right bat
             points1+=1;
             player1.textContent = points1;
-            ballSpeedX=-ballSpeedX;
             missed.play();
           }
           else {
-            ballSpeedY+=scale_const*(ballY-(bat2Y+35));
+            ballSpeedY+=scale_const*(ballY-(bat2Y+35));   //change ball speed according to point of hit
             ballSpeedX=-ballSpeedX;
-            hit=!hit;
             ping.play();
           }
         }
-        else if(ballX==30)  {
-          if(ballY<bat1Y-10 || ballY>bat1Y+80) {  //collision detection with left bat
+        else if(ballX==30 && hit)  {
+          //ballSpeedX=-ballSpeedX;
+          hit=!hit;
+          if(ballY<bat1Y-15 || ballY>bat1Y+85) {  //collision detection with left bat
             points2+=1;
             player2.textContent = points2;
-            ballSpeedX=-ballSpeedX;
             missed.play();
           }
           else {
-            ballSpeedY+=scale_const*(ballY-(bat1Y+35));
+            ballSpeedY+=scale_const*(ballY-(bat1Y+35));   //change ball speed according to point of hit
             ballSpeedX=-ballSpeedX;
-            hit=!hit;
             ping.play();
           }
         }
@@ -78,7 +80,21 @@
         ctx.arc(ballX,ballY,10,0,2*Math.PI);
         ctx.fill();
 
-        //draw computer controlled bat
+        if(ballX>760)
+          ctx.fillRect(780,bat2Y,10,70);
+        else if(ballX<40)
+          ctx.fillRect(10,bat1Y,10,70);
+
+        //check if ball has touched the walls or not
+        if(ballX>=790 || ballX<=10)
+          ballSpeedX=-ballSpeedX;
+        if(ballY<=10 || ballY>=390)
+          ballSpeedY=-ballSpeedY;
+
+      }
+
+      //function to draw computer controlled bat
+      function drawBat1() {
         if(hit && ballX<=400) {       //update only when ball is in the left half
           if(ballY<bat1Y+20 && bat1Y>10) {
             ctx.clearRect(10,bat1Y,10,70);
@@ -91,44 +107,8 @@
             ctx.fillRect(10,bat1Y,10,70);
           }
         }
-
-        //check if ball has touched the walls or not
-        if(ballX<=20 || ballX>=780) {
-          ballSpeedX=-ballSpeedX;
-          hit = !hit;
-        }
-        if(ballY<=10 || ballY>=390)
-          ballSpeedY=-ballSpeedY;
-
-          //check if game is over or not
-          if(points1==5) {
-            clearInterval(tgame);
-            resetInitialValues();
-            ctx.fillText("Player1 Won!!",80,190);
-            ctx.drawImage(sign,0,0,1146,611,350,75,400,250);
-          }
-          else if(points2==5) {
-            clearInterval(tgame);
-            resetInitialValues();
-            ctx.fillText("Player2 Won!!",480,190);
-            ctx.drawImage(sign,0,0,1146,611,0,75,400,250);
-          }
-
       }
 
-      //function to update position of left bat
-      function drawBat1(event) {
-        if(event.keyCode == 83 && bat1Y>=15) {
-          ctx.clearRect(10,bat1Y,10,70);
-          bat1Y-=10;
-          ctx.fillRect(10,bat1Y,10,70);
-        }
-        else if(event.keyCode == 88 && bat1Y<=325) {
-          ctx.clearRect(10,bat1Y,10,70);
-          bat1Y+=10;
-          ctx.fillRect(10,bat1Y,10,70);
-        }
-      }
 
       //function to update position of right bat
       function drawBat2(event) {
@@ -143,9 +123,33 @@
           ctx.fillRect(780,bat2Y,10,70);
         }
       }
+
+      //function to check if game is over or not
+      function isGameOver() {
+        if(points1==5) {
+          clearInterval(tgame);
+          resetInitialValues();
+          ctx.fillText("You lost!!",80,190);
+          ctx.drawImage(sign,0,0,1146,611,350,75,400,250);
+          lost.play();
+        }
+        else if(points2==5) {
+          clearInterval(tgame);
+          resetInitialValues();
+          ctx.fillText("You Won!!",480,190);
+          ctx.drawImage(sign,0,0,1146,611,0,75,400,250);
+          win.play();
+        }
+      }
+
+      //Gameloop
       function gameloop() {
         drawBall();
+        drawBat1();
+        isGameOver();
       }
+
+      //function to start the game
       function beginGame() {
 
           gameStarted = 1;
@@ -170,11 +174,13 @@
       var ctx = canvas.getContext('2d');
       var ping = new Audio('ping.mp3');
       var missed = new Audio('score.mp3');
+      var win = new Audio('win.mp3');
+      var lost = new Audio('lost.wav');
       ctx.font = "30px Calibri";
       ctx.fillStyle = "#00ff00";
       ctx.fillText("Use K and M to move the right paddle up and down",80,180);
       ctx.fillText("First player to reach 5 points wins",160,220);
-      var tgame,gameStarted = 0,hit= true;
+      var tgame,gameStarted = 0,hit=true;
       var ballX=400,ballY=200,ballSpeedX=-5,ballSpeedY=-5,bat1Y=165,bat2Y=165,points1=0,points2=0,scale_const=0.15;
       var sign = new Image();
       sign.src = 'sign.png';
